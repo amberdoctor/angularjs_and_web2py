@@ -1,0 +1,136 @@
+{{extend 'layout.html'}}
+<style>
+    /* when not a demo, move this code to a separate file, then include
+    included here for ease of following the demonstration */
+    .selected{color:blue;} .border{border-color:grey;} .hover:hover{text-decoration:underline;}
+</style>
+<script>
+    //when not a demo, move this script to a separate file, then include
+    //included here for ease of following demonstration
+    //Note AngularJS code is included within the layout
+var demoAngular = angular.module('demoAngular', []);
+
+demoAngular.config(function($interpolateProvider) {
+    //allow Web2py views and Angular to co-exist
+    $interpolateProvider.startSymbol('{[{');
+    $interpolateProvider.endSymbol('}]}');
+});
+
+    demoAngular.controller('demoAngularCtrl', function($scope, $http) {
+        $scope.recipeList = {{=XML(recipe_list)}};
+        $scope.showJson = false;
+        $scope.showAddRecipe = false;
+        $scope.data = 'false';
+        $scope.selectedRecipe = -1;
+        $scope.numberOfBatches = 1;
+        $scope.errorMessage = '';
+
+        $scope.getIngredients = function(recipe){
+            //check if the list already has ingredients - if not grab them
+        index = $scope.recipeList.indexOf(recipe);
+        if ($scope.recipeList[index]['ingredient_list']){
+            $scope.selectedRecipe = index;
+            $scope.numberOfBatches = 1;
+        } else {
+            //Get the data from the database via http call
+            $http.get('{{=URL('recipes','get_ingredients')}}' + '.json/' + recipe.id).success(function(data, status) {
+                $scope.status = status;
+                $scope.data = data;
+                $scope.recipeList[index]['ingredient_list'] = data.ingredient_list;
+                $scope.selectedRecipe = index;
+                $scope.numberOfBatches = 1;
+            }).error(function(data, status) {
+                $scope.errorMessage = 'Recipe Detail Request Failed';
+                $scope.selectedRecipe = -1;
+            });
+        };
+
+
+        };
+
+        $scope.newRecipe = {'ingredient_list':[]};
+        $scope.addIngredient = function(){
+            $scope.newRecipe.ingredient_list[$scope.newRecipe.ingredient_list.length] = {'name':'', 'quantity':'', 'unit':''};
+        };
+        $scope.removeIngredient = function(index){
+            $scope.newRecipe.ingredient_list.splice(index, 1);
+        };
+        $scope.saveRecipe = function(){
+            //Save to database
+            $http.put('{{=URL('recipes','add_recipe')}}', $scope.newRecipe)
+            .success(function(data, status) {
+                $scope.recipeList.push(data.newRecipe); //add the new recipe to the recipe list
+                $scope.showAddRecipe = false; //hide the add recipe form
+                $scope.newRecipe = {'ingredient_list':[]}; //reset the new recipe
+            }).error(function(data, status) {
+                $scope.errorMessage = 'Save Recipe Failed'; //set error message
+            });
+        };
+
+        $scope.isRecipeSelected = function(recipe){
+            return angular.equals(selectedRecipe, $scope.recipeList.indexOf(recipe));
+        };
+
+        $scope.toggleShowJson = function(){
+            $scope.showJson = !$scope.showJson;
+        };
+
+        $scope.prepopulateNewRecipe = function() {
+            $scope.newRecipe = {"ingredient_list":[{"name":"neapolitan ice cream","quantity":1,"unit":"scoop"},{"name":"cookie","quantity":2,"unit":""}],"name":"Neapolitan Ice Cream Sandwich","instructions":"Sandwich ice cream between two cookies."};
+        };
+
+    });
+</script>
+<div ng-app='demoAngular'>
+    <div ng-controller='demoAngularCtrl'>
+
+        <div ng-show='errorMessage'>
+            <h3>Error Message</h3>
+            <p>{[{errorMessage}]}</p>
+            <p ng-click='errorMessage=""'>Click here to clear error message.</p>
+        </div>
+
+        <h3>Recipe List</h3>
+        <ul>
+            <li ng-repeat='recipe in recipeList | orderBy:"name"' ng-click='getIngredients(recipe)' ng-class='{selected:selectedRecipe === recipeList.indexOf(recipe), hover:true}'>{[{recipe.name}]}</li>
+        </ul>
+
+        <div ng-hide="selectedRecipe == -1">
+            <h3>Selected Recipe</h3>
+            <h4>{[{recipeList[selectedRecipe].name}]}</h4>
+            <div>Number of Batches <input type='text' ng-model='numberOfBatches' placeholder='ingredient' /></div>
+            <div><ul>
+                <li ng-repeat='ingredient in recipeList[selectedRecipe].ingredient_list'>{[{ingredient.quantity*numberOfBatches}]} {[{ingredient.unit}]} {[{ingredient.name}]}</li>
+                </ul></div>
+            <div>{[{recipeList[selectedRecipe].instructions}]}</div>
+        </div>
+
+        <h4>
+            <button ng-click='toggleShowJson()'><span ng-show='showJson'>Hide</span><span ng-hide='showJson'>Show</span> Recipe List JSON</button>
+            <pre ng-show="showJson">{[{recipeList | json}]}</pre>
+        </h4>
+
+        <div><button ng-hide='showAddRecipe' ng-click='showAddRecipe = true'>Add a Recipe</button></div>
+        <div ng-show='showAddRecipe'>
+            <h3>Add Recipe</h3>
+           <div>newRecipe: {[{newRecipe}]}</div>
+            <div>
+                <div><input type='text' ng-model='newRecipe.name' placeholder='Recipe Name'></div>
+                <div><input type='text' ng-model='newRecipe.instructions' placeholder='Instructions'></div>
+                <div>
+                    <ul>
+                        <li ng-repeat='ingredient in newRecipe.ingredient_list'>
+                            <input type='text' ng-model='ingredient.name' placeholder='ingredient' />
+                            <input type='number' ng-model='ingredient.quantity' placeholder='quantity (as a number)' />
+                            <input type='text' ng-model='ingredient.unit' placeholder='unit of measure' />
+                            <span ng-click='removeIngredient($index)'>Remove</span>
+                        </li>
+                    </ul>
+                </div>
+                <button ng-click='addIngredient()'>Add Ingredient</button>
+                <button ng-click='prepopulateNewRecipe()'>Cheat and Prepopulate Recipe</button>
+                <button ng-click='saveRecipe()'>Save Recipe</button>
+            </div>
+       </div>
+    </div>
+ </div>

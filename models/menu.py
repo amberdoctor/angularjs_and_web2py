@@ -7,12 +7,12 @@
 
 response.logo = A(B('web',SPAN(2),'py'),XML('&trade;&nbsp;'),
                   _class="brand",_href="http://www.web2py.com/")
-response.title = request.application.replace('_',' ').title()
-response.subtitle = ''
+response.title = 'Angular Demo'#request.application.replace('_',' ').title()
+response.subtitle = 'by Amber Doctor'
 
 ## read more at http://dev.w3.org/html5/markup/meta.name.html
-response.meta.author = 'Your Name <you@example.com>'
-response.meta.keywords = 'web2py, python, framework'
+response.meta.author = 'Amber Doctor <amberdoctor@gmail.com>'
+response.meta.keywords = 'web2py, python, framework, angular, demo, amberdoctor'
 response.meta.generator = 'Web2py Web Framework'
 
 ## your http://google.com/analytics id
@@ -23,7 +23,9 @@ response.google_analytics_id = None
 #########################################################################
 
 response.menu = [
-    (T('Home'), False, URL('default', 'index'), [])
+    (T('Data Bind Demo'), False, URL('default', 'index'), []),
+    (T('Recipe Demo'), False, URL('recipes', 'index'), []),
+    (T('Slides'), False, 'https://slides.com/amberdoctor/angularjs_and_web2py', [])
 ]
 
 DEVELOPMENT_MENU = True
@@ -136,4 +138,4 @@ def _():
          )]
 if DEVELOPMENT_MENU: _()
 
-if "auth" in locals(): auth.wikimenu() 
+if "auth" in locals(): auth.wikimenu()
